@@ -1,7 +1,5 @@
 import sys
 import os
-
-# import funkcji z Twojego pliku
 from signatureAnalisys import calculate_signature_coverage_score
 
 
@@ -10,7 +8,7 @@ def main():
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "example\\path"  # fallback
+        file_path = "example\\path"  
 
     if not os.path.exists(file_path):
         print(f"[ERROR] File not found: {file_path}")
