@@ -8,6 +8,7 @@ vi.mock("./services/api", () => ({
 }));
 
 const mockedScoreSignature = vi.mocked(scoreSignature);
+type ScoreResponse = Awaited<ReturnType<typeof scoreSignature>>;
 
 describe("App", () => {
   beforeEach(() => {
@@ -15,11 +16,10 @@ describe("App", () => {
   });
 
   it("moves through upload to result state", async () => {
-    let resolveScore: ((value: { score: number; filename: string; mimeType: string }) => void) | null =
-      null;
+    let resolveScore: (value: ScoreResponse) => void = () => undefined;
     mockedScoreSignature.mockImplementation(
       () =>
-        new Promise((resolve) => {
+        new Promise<ScoreResponse>((resolve) => {
           resolveScore = resolve;
         }),
     );
@@ -34,7 +34,7 @@ describe("App", () => {
 
     expect(await screen.findByText(/analyzing your signature/i)).toBeInTheDocument();
 
-    resolveScore?.({
+    resolveScore({
       score: 82,
       filename: "signature.png",
       mimeType: "image/png",
@@ -48,17 +48,21 @@ describe("App", () => {
     expect(mockedScoreSignature).toHaveBeenCalledWith(file);
   });
 
-  it("shows validation messaging for unsupported file types", async () => {
+  it("shows validation messaging for oversized uploads", async () => {
     render(<App />);
     const user = userEvent.setup();
 
     const input = screen.getByLabelText(/upload signature image/i);
-    const invalidFile = new File(["gif"], "signature.gif", { type: "image/gif" });
+    const oversizedFile = new File(
+      [new Uint8Array(11 * 1024 * 1024)],
+      "signature.png",
+      { type: "image/png" },
+    );
 
-    await user.upload(input, invalidFile);
+    await user.upload(input, oversizedFile);
 
     expect(
-      await screen.findByText(/please upload a png, jpg, jpeg, or webp image/i),
+      await screen.findByText(/please keep uploads under 10 mb/i),
     ).toBeInTheDocument();
     expect(mockedScoreSignature).not.toHaveBeenCalled();
   });
