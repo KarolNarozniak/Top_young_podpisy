@@ -1,14 +1,15 @@
 import sys
 import os
-from signatureAnalisys import calculate_signature_coverage_score
+
+from backend.scoring.grid import calculate_signature_coverage_score
 
 
 def main():
-    # argument z terminala
+    # Historical CLI helper retained for reference and older experiments.
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
     else:
-        file_path = "example\\path"  
+        file_path = "example\\path"
 
     if not os.path.exists(file_path):
         print(f"[ERROR] File not found: {file_path}")

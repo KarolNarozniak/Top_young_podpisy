@@ -2,7 +2,7 @@ import os
 import csv
 import argparse
 
-from signatureAnalisys import calculate_signature_coverage_score
+from backend.scoring.grid import calculate_signature_coverage_score
 
 # Example usage:
 #   1) Basic (reads images from a folder, writes scores.csv in current directory):
@@ -21,6 +21,7 @@ from signatureAnalisys import calculate_signature_coverage_score
 #      python batch_to_csv.py ./images --extensions .png,.jpg,.jpeg
 
 DEFAULT_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
+
 
 def iter_image_files(input_dir: str, extensions: set[str]):
     for f in os.listdir(input_dir):

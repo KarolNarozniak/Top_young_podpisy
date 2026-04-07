@@ -1,7 +1,14 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.venv/
+venv/
+pytest-cache-files-*/
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
-
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+frontend/src/**/*.js
+frontend/src/**/*.d.ts

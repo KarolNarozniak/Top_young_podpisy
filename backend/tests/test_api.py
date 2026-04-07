@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import io
+from dataclasses import replace
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw
 
 from backend.app import app
+from backend.config import get_settings
 
 client = TestClient(app)
 
@@ -60,3 +63,28 @@ def test_signature_score_returns_zero_for_empty_image() -> None:
         "mimeType": "image/png",
     }
 
+
+def test_signature_score_rejects_unsupported_file_types() -> None:
+    response = client.post(
+        "/api/signature-score",
+        files={"file": ("notes.txt", io.BytesIO(b"invalid"), "text/plain")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Unsupported file type. Please upload PNG, JPG, JPEG, or WebP."
+
+
+def test_signature_score_falls_back_cleanly_when_model_file_is_missing(monkeypatch) -> None:
+    settings = replace(
+        get_settings(),
+        model_path=Path("C:/this/path/does/not/exist/best_model.pt"),
+    )
+    monkeypatch.setattr("backend.api.routes.get_settings", lambda: settings)
+
+    response = client.post(
+        "/api/signature-score",
+        files={"file": ("signature.png", make_signature_image(), "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert 0 <= response.json()["score"] <= 100
