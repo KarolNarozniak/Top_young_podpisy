@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type MouseEvent, useMemo } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { ImageUp, Sparkles } from "lucide-react";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { logUploadDebug } from "@/lib/upload-debug";
 import { cn } from "@/lib/utils";
 import type { UploadState } from "@/types";
 
@@ -49,22 +50,56 @@ export function UploadDropzone({
     return firstError.message;
   }
 
+  function handleOpenFileDialog(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    logUploadDebug("manual-file-dialog-open-requested", { source: "choose-file-button" });
+    open();
+  }
+
   const { getRootProps, getInputProps, open, isDragActive } = useDropzone({
     accept,
     maxSize: MAX_FILE_SIZE_BYTES,
     maxFiles: 1,
+    noClick: true,
+    noKeyboard: true,
     disabled: state === "analyzing",
-    onDragEnter: () => onDragStateChange(true),
-    onDragLeave: () => onDragStateChange(false),
+    onDragEnter: () => {
+      logUploadDebug("drag-enter");
+      onDragStateChange(true);
+    },
+    onDragLeave: () => {
+      logUploadDebug("drag-leave");
+      onDragStateChange(false);
+    },
+    onFileDialogOpen: () => {
+      logUploadDebug("file-dialog-opened");
+    },
+    onFileDialogCancel: () => {
+      logUploadDebug("file-dialog-cancelled");
+    },
     onDropAccepted: ([file]) => {
       onDragStateChange(false);
       if (file) {
+        logUploadDebug("file-accepted-by-dropzone", {
+          fileName: file.name,
+          size: file.size,
+          type: file.type,
+        });
         onFileAccepted(file);
       }
     },
     onDropRejected: (fileRejections) => {
       onDragStateChange(false);
-      onFileRejected(mapDropzoneError(fileRejections));
+      const message = mapDropzoneError(fileRejections);
+      logUploadDebug("file-rejected-by-dropzone", {
+        message,
+        rejectionCount: fileRejections.length,
+        reasons: fileRejections.flatMap((rejection) =>
+          rejection.errors.map((error) => error.code),
+        ),
+      });
+      onFileRejected(message);
     },
   });
 
@@ -105,7 +140,7 @@ export function UploadDropzone({
             Files up to {MAX_FILE_SIZE_MB} MB. The uploaded image is sent to your local
             Python API for scoring.
           </p>
-          <Button className="mt-6" size="lg" type="button" onClick={open}>
+          <Button className="mt-6" size="lg" type="button" onClick={handleOpenFileDialog}>
             Choose a file
           </Button>
         </div>

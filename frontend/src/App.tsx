@@ -6,6 +6,7 @@ import { ResultPanel } from "@/components/result-panel";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { logUploadDebug } from "@/lib/upload-debug";
 import type { ApiError, SignatureResult, UploadState } from "@/types";
 import { scoreSignature } from "@/services/api";
 
@@ -48,8 +49,19 @@ function App() {
   }, [state]);
 
   async function handleFileAccepted(file: File) {
+    logUploadDebug("app-received-file", {
+      fileName: file.name,
+      size: file.size,
+      type: file.type,
+      currentState: state,
+    });
+
     const validationError = validateFile(file);
     if (validationError) {
+      logUploadDebug("file-failed-client-validation", {
+        fileName: file.name,
+        validationError,
+      });
       setErrorMessage(validationError);
       setState("error");
       return;
@@ -66,6 +78,11 @@ function App() {
 
     try {
       const response = await scoreSignature(file);
+      logUploadDebug("score-received-from-api", {
+        fileName: response.filename,
+        score: response.score,
+        mimeType: response.mimeType,
+      });
       setResult({
         ...response,
         previewUrl: nextPreviewUrl,
@@ -73,12 +90,20 @@ function App() {
       setState("result");
     } catch (error) {
       const apiError = error as ApiError;
+      logUploadDebug("api-scoring-failed", {
+        fileName: file.name,
+        message: apiError.message,
+      });
       setErrorMessage(apiError.message);
       setState("error");
     }
   }
 
   function handleFileRejected(message: string) {
+    logUploadDebug("app-received-rejected-file", {
+      message,
+      currentState: state,
+    });
     setErrorMessage(message);
     setState("error");
   }
@@ -98,6 +123,10 @@ function App() {
   }
 
   function handleReset() {
+    logUploadDebug("upload-flow-reset", {
+      hadPreview: Boolean(previewUrl),
+      hadResult: Boolean(result),
+    });
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }

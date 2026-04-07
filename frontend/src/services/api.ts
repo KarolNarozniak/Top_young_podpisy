@@ -1,6 +1,13 @@
 import type { ApiError, SignatureScoreResponse } from "@/types";
+import { logUploadDebug } from "@/lib/upload-debug";
 
 export async function scoreSignature(file: File): Promise<SignatureScoreResponse> {
+  logUploadDebug("api-request-started", {
+    fileName: file.name,
+    size: file.size,
+    type: file.type,
+  });
+
   const formData = new FormData();
   formData.append("file", file);
 
@@ -22,8 +29,18 @@ export async function scoreSignature(file: File): Promise<SignatureScoreResponse
     }
 
     const apiError: ApiError = { message };
+    logUploadDebug("api-request-failed", {
+      status: response.status,
+      message,
+    });
     throw apiError;
   }
 
-  return (await response.json()) as SignatureScoreResponse;
+  const payload = (await response.json()) as SignatureScoreResponse;
+  logUploadDebug("api-request-succeeded", {
+    status: response.status,
+    fileName: payload.filename,
+    score: payload.score,
+  });
+  return payload;
 }
