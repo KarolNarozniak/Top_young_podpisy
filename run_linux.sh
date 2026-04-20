@@ -7,6 +7,8 @@ VENV_DIR="${ROOT_DIR}/.venv"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 BACKEND_PID=""
+export BACKEND_PORT
+export FRONTEND_PORT
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
